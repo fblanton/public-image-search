@@ -4,32 +4,76 @@ const sampleGoogleResponse = `{ "kind": "customsearch#search", "url": { "type": 
 
 
 // redux reducers
-const result = (state = {}, action) => {
+const searchEngine = (state = {}, action) => {
   switch (action.type) {
     case 'ADD_RESULTS':
       return JSON.parse(action.response);
+    case 'UPDATE_TERM':
+      return Object.assign({}, state, { term: action.term });
+      break
     default:
       return state;
   }
 };
 
-const searchTerm = (state = '', action) => {
+const apiInput = (state = {visible: false}, action) => {
   switch (action.type) {
-    case 'UPDATE_TERM':
-      return action.term;
+    case 'TOGGLE-API-INPUT':
+      return (state.visible)
+        ? Object.assign({}, state, { visible: false })
+        : Object.assign({}, state, { visible: true });
+      break;
+    case 'ADD_GOOGLE_API_KEY':
+      return Object.assign({}, state, { googleApiKey: action.apiKey });
       break;
     default:
       return state;
   }
-};
+}
 
 // init redux store
-const searchApp = combineReducers({ result, searchTerm });
+const searchApp = combineReducers({ searchEngine, apiInput });
 const store = createStore(searchApp);
 
-store.dispatch({ type: 'ADD_RESULTS', response: sampleGoogleResponse });
-
 // front-end code
-term.addEventListener('input', () => store.dispatch(
-  { type: 'UPDATE_TERM', term: term.value }
+const render = state => {
+  (state.apiInput.visible)
+    ? theApiStatus.nextElementSibling.classList.remove('hidden')
+    : theApiStatus.nextElementSibling.classList.add('hidden');
+
+  (state.apiInput.googleApiKey)
+    ? theApiStatus.textContent = 'API KEY: ' + state.apiInput.googleApiKey
+    : theApiStatus.textContent = 'API KEY: NONE - Click to Add';
+  console.log(state);
+}
+
+const theTerm = document.getElementById('term');
+theTerm.addEventListener('change', () => store.dispatch(
+  { type: 'UPDATE_TERM', term: theTerm.value }
 ));
+
+const theSearchForm = document.getElementById('search-form');
+theSearchForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+});
+
+const theApiStatus = document.getElementById('api-status');
+theApiStatus.addEventListener('click', () => store.dispatch(
+  {type: 'TOGGLE-API-INPUT'}
+));
+
+const theApiInput = document.getElementById('google-api-key');
+theApiInput.addEventListener('change', () =>
+  store.dispatch({ type: 'ADD_GOOGLE_API_KEY', apiKey: theApiInput.value })
+);
+theApiInput.addEventListener('blur', () =>
+  store.dispatch({ type: 'TOGGLE-API-INPUT' })
+);
+
+// run app
+store.subscribe( () => render(store.getState()) );
+render(store.getState());
+//store.dispatch({ type: 'ADD_RESULTS', response: sampleGoogleResponse });
+
+
+//
